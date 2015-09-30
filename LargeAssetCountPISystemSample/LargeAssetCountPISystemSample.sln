@@ -1,0 +1,76 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlatStructureBuilder", "FlatStructureBuilder\FlatStructureBuilder.csproj", "{891AEEE6-9DB8-4E2B-99AC-F00F052E3182}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HierarchyBuilder", "HierarchyBuilder\HierarchyBuilder.csproj", "{F98FD0BA-9174-4765-84C4-2E6B4B144BF3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalculationEngine", "CalculationEngine\CalculationEngine.csproj", "{D2931BDC-49F9-4CA3-B93A-90BEF5523ADF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utilities", "Utilities\Utilities.csproj", "{C4A0192E-619A-4AC4-B479-E4F37BD1182F}"
+EndProject
+Global
+	GlobalSection(TeamFoundationVersionControl) = preSolution
+		SccNumberOfProjects = 5
+		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccTeamFoundationServer = http://tfs:8080/tfs/osi2
+		SccLocalPath0 = .
+		SccProjectUniqueName1 = FlatStructureBuilder\\FlatStructureBuilder.csproj
+		SccProjectName1 = FlatStructureBuilder
+		SccLocalPath1 = FlatStructureBuilder
+		SccProjectUniqueName2 = HierarchyBuilder\\HierarchyBuilder.csproj
+		SccProjectName2 = HierarchyBuilder
+		SccLocalPath2 = HierarchyBuilder
+		SccProjectUniqueName3 = CalculationEngine\\CalculationEngine.csproj
+		SccProjectName3 = CalculationEngine
+		SccLocalPath3 = CalculationEngine
+		SccProjectUniqueName4 = Utilities\\Utilities.csproj
+		SccProjectName4 = Utilities
+		SccLocalPath4 = Utilities
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{891AEEE6-9DB8-4E2B-99AC-F00F052E3182}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{891AEEE6-9DB8-4E2B-99AC-F00F052E3182}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{891AEEE6-9DB8-4E2B-99AC-F00F052E3182}.Debug|x64.ActiveCfg = Debug|x64
+		{891AEEE6-9DB8-4E2B-99AC-F00F052E3182}.Debug|x64.Build.0 = Debug|x64
+		{891AEEE6-9DB8-4E2B-99AC-F00F052E3182}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{891AEEE6-9DB8-4E2B-99AC-F00F052E3182}.Release|Any CPU.Build.0 = Release|Any CPU
+		{891AEEE6-9DB8-4E2B-99AC-F00F052E3182}.Release|x64.ActiveCfg = Release|x64
+		{891AEEE6-9DB8-4E2B-99AC-F00F052E3182}.Release|x64.Build.0 = Release|x64
+		{F98FD0BA-9174-4765-84C4-2E6B4B144BF3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F98FD0BA-9174-4765-84C4-2E6B4B144BF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F98FD0BA-9174-4765-84C4-2E6B4B144BF3}.Debug|x64.ActiveCfg = Debug|x64
+		{F98FD0BA-9174-4765-84C4-2E6B4B144BF3}.Debug|x64.Build.0 = Debug|x64
+		{F98FD0BA-9174-4765-84C4-2E6B4B144BF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F98FD0BA-9174-4765-84C4-2E6B4B144BF3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F98FD0BA-9174-4765-84C4-2E6B4B144BF3}.Release|x64.ActiveCfg = Release|x64
+		{F98FD0BA-9174-4765-84C4-2E6B4B144BF3}.Release|x64.Build.0 = Release|x64
+		{D2931BDC-49F9-4CA3-B93A-90BEF5523ADF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2931BDC-49F9-4CA3-B93A-90BEF5523ADF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2931BDC-49F9-4CA3-B93A-90BEF5523ADF}.Debug|x64.ActiveCfg = Debug|x64
+		{D2931BDC-49F9-4CA3-B93A-90BEF5523ADF}.Debug|x64.Build.0 = Debug|x64
+		{D2931BDC-49F9-4CA3-B93A-90BEF5523ADF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2931BDC-49F9-4CA3-B93A-90BEF5523ADF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2931BDC-49F9-4CA3-B93A-90BEF5523ADF}.Release|x64.ActiveCfg = Release|x64
+		{D2931BDC-49F9-4CA3-B93A-90BEF5523ADF}.Release|x64.Build.0 = Release|x64
+		{C4A0192E-619A-4AC4-B479-E4F37BD1182F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C4A0192E-619A-4AC4-B479-E4F37BD1182F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C4A0192E-619A-4AC4-B479-E4F37BD1182F}.Debug|x64.ActiveCfg = Debug|x64
+		{C4A0192E-619A-4AC4-B479-E4F37BD1182F}.Debug|x64.Build.0 = Debug|x64
+		{C4A0192E-619A-4AC4-B479-E4F37BD1182F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C4A0192E-619A-4AC4-B479-E4F37BD1182F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C4A0192E-619A-4AC4-B479-E4F37BD1182F}.Release|x64.ActiveCfg = Release|x64
+		{C4A0192E-619A-4AC4-B479-E4F37BD1182F}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
