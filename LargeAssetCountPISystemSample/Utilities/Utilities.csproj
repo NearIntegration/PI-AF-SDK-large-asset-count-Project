@@ -72,6 +72,7 @@
   <ItemGroup>
     <Content Include="Documentation\Images\containers.PNG" />
     <Content Include="Documentation\Images\database_structure.PNG" />
+    <Content Include="Documentation\Images\result_of_flat_builder.PNG" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
