@@ -70,6 +70,7 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <Content Include="Documentation\Images\containers.PNG" />
     <Content Include="Documentation\Images\database_structure.PNG" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
