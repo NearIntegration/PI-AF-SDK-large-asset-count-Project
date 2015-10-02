@@ -1,4 +1,4 @@
-# Large-Asset-Count-Project --- How to Handle Millions of AF Elements Efficiently 
+# Large Asset Count Project - How to Handle Millions of AF Elements Efficiently 
 
 Due to the increasing number of connected devices present in industries, more and more PI Systems were built to support up to millions of AF assets and data streams in recent years. Even though OSIsoft produces a healthy PI software ecosystem, the off-the-shelf PI client applications may not yet work well for some use cases in large-asset-count systems. In these cases custom applications often need to be developed using the PI System software libraries, such as PI AF SDK.
 
