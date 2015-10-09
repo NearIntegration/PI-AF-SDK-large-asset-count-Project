@@ -13,7 +13,7 @@ namespace HierarchyBuilder
     /// </summary>
     class HierarchyBuilder : IDisposable
     {
-        private const int ChunckSize = 10000;
+        private const int ChunkSize = 10000;
         private const int RefreshIntervalInMilliseconds = 10000;
 
         private AFReferenceType _weakReferenceType;
@@ -31,6 +31,7 @@ namespace HierarchyBuilder
             _targetDatabase = settings.TargetDatabase;
             _hierarchyLevels = settings.HierarchyLevels;
             _leafElementTemplateName = settings.LeafElementTemplateName;
+            _weakReferenceType = _targetDatabase.ReferenceTypes["Weak Reference"];
 
             // If the cookie is null, initialize it to start monitoring changes
             if (ReferenceEquals(_dbCookie, null))
@@ -93,14 +94,13 @@ namespace HierarchyBuilder
         private void BuildHierarchy()
         {
             int index = 0;
-            int total = _elementContainers[0].ContainerElement.Elements.Count;
-            _weakReferenceType = _targetDatabase.ReferenceTypes["Weak Reference"];
+            int total;
 
             do
             {
                 var leafElements = _elementContainers[0]
                     .ElementTemplate
-                    .FindInstantiatedElements(true, AFSortField.Name, AFSortOrder.Ascending, index, ChunckSize, out total);
+                    .FindInstantiatedElements(true, AFSortField.Name, AFSortOrder.Ascending, index, ChunkSize, out total);
 
                 var elementCount = leafElements.Count;
                 if (elementCount == 0)
@@ -121,7 +121,7 @@ namespace HierarchyBuilder
                     index,
                     elementCount);
 
-                index += ChunckSize;
+                index += ChunkSize;
 #if DEBUG
             } while (index < 50000);
 # else
@@ -229,7 +229,7 @@ namespace HierarchyBuilder
             {
                 int currentLevel = _elementContainers.IndexOf(container);
                 var lowerLevelContainer = _elementContainers[currentLevel - 1];
-
+                            
                 // Build a mapping dictionary between the current level and the leaf level
                 // Key is the element at the current level, Value is a list of leaf elements under the Key element
                 Dictionary<string, List<AFElement>> mappings = leafElements
@@ -297,12 +297,11 @@ namespace HierarchyBuilder
                 // Create and resolve PI Point paths in new elements if necessary
                 ElementCreator.CreateorUpdatePIPointDataReference(elementsToProcess);
 
-                _targetDatabase.ApplyChanges(AFCheckedOutMode.ObjectsCheckedOutThisThread);
+                _targetDatabase.CheckIn(AFCheckedOutMode.ObjectsCheckedOutThisThread);
 
                 Console.WriteLine("{0} | Finished building hierarchy at {1} level", DateTime.Now, container.ElementTemplate);
             }
 
-            _targetDatabase.CheckIn(AFCheckedOutMode.ObjectsCheckedOutThisThread);
             Console.WriteLine("{0} | Finished building hierarchy for {1} leaf elements", DateTime.Now, leafElements.Count);
         }
         public void Dispose()
@@ -320,7 +319,10 @@ namespace HierarchyBuilder
             {
                 lock (_lock)
                 {
-                    _refreshTimer.Dispose();
+                    if (_refreshTimer != null)
+                    {
+                        _refreshTimer.Dispose();
+                    }
 
                     if (_targetDatabase != null)
                     {

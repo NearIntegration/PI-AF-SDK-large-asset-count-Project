@@ -426,7 +426,10 @@ namespace CalculationEngine
             return results.SelectMany(r => r);
         }
 
-        private static AFAttributeList[] ChunkifyAFAttributes(IEnumerable<AFAttribute> attributes, int pageSize)
+        /// <summary>
+        /// Divide a list of AFAttribute into multiple pages
+        /// </summary>
+        private AFAttributeList[] ChunkifyAFAttributes(IEnumerable<AFAttribute> attributes, int pageSize)
         {
             int listCount = attributes.Count() / pageSize + 1;
             var attributeLists = Enumerable.Range(0, listCount).Select(i => new AFAttributeList()).ToArray();
