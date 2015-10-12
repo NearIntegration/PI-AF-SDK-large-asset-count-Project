@@ -89,6 +89,10 @@ After compiling the solution, users should run the sample code following the seq
        </appSettings>
      </configuration>
   ```
+  
+## Questions and Comments
+
+For questions and comments, please join the discussion on [PI Developers Club](https://pisquare.osisoft.com/docs/DOC-1881).
 
 ## PI Software Versions
 
