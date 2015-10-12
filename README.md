@@ -98,7 +98,7 @@ The code has been fully tested using a PI System containing 1 million leaf eleme
 
 ## Contributors
 
-  This project is based on the original work from [Jin Huang](https://github.com/jhuang0909) and [Barry Zhang](https://github.com/bzshang). We encourage contribution from any PI developers. New use case ideas and code contributions are always welcome.  
+  This project is based on the original work from [Jin Huang](https://github.com/jhuang0909) and [Barry Shang](https://github.com/bzshang). We encourage contribution from any PI developers. New use case ideas and code contributions are always welcome.  
 
 ## LICENSE
 
