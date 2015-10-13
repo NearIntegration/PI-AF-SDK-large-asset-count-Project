@@ -107,7 +107,7 @@ namespace HierarchyBuilder
                     break;
 
                 Console.WriteLine(
-                    "{0} | StartIndex = {1} | Found a chunk of {2} leaf elements using FindInstantiatedElements",
+                    "{0} | StartIndex = {1} | Found a chunk of {2} leaf elements",
                     DateTime.Now,
                     index,
                     elementCount);
@@ -213,7 +213,7 @@ namespace HierarchyBuilder
             if (leafElements == null || leafElements.Count == 0)
                 return;
 
-            Console.WriteLine("{0} | Starting to build hierarchy for {1} leaf elements", DateTime.Now, leafElements.Count);
+            Console.WriteLine("{0} | Started to build hierarchy for {1} leaf elements", DateTime.Now, leafElements.Count);
 
             // Load attributes representing higher levels from leaf elements, assuming the higher-level element template name is the same as the attribute template name in leaf elements.
             IList<AFAttributeTemplate> ats = new List<AFAttributeTemplate>();

@@ -69,8 +69,19 @@ namespace CalculationEngine
                         var topElements = nonLeafElements.Last();
                         var leafValueAttributes = new List<AFAttribute>();
                         var rootElements = new List<AFElement>();
+                        int index = 0;
+
                         foreach (var topElement in topElements.Item3)
                         {
+                            // Block the thread for a short time to check whether user has called Stop() and set the state of WaitHandle signaled
+                            // If true, stop calculations
+                            if (_closeEvent.Wait(100))
+                            {
+                                leafValueAttributes = new List<AFAttribute>();
+                                rootElements = new List<AFElement>();
+                                break;
+                            }
+
                             // Collect value attributes from all leaf elements, which will be used in both rollup and fluctuation index calculations
                             AggregateLeafAttributesRecursively(topElements.Item1, topElement, Constants.LEAF_VALUE, leafValueAttributes);
                             rootElements.Add(topElement);
@@ -78,13 +89,13 @@ namespace CalculationEngine
                             // Process a chunk of leaf value attributes at one time in order to keep the memory consumption low
                             if (leafValueAttributes.Count >= ChunkSize * MaxParallel)
                             {
-                                // Block the thread for a short time to check whether user has called Stop() and set the state of WaitHandle signaled
-                                // If true, stop calculations
-                                if (_closeEvent.Wait(100))
-                                    break;
+                                Console.WriteLine("{0} | StartIndex = {1} | Started historical data analyses for {2} leaf elements", DateTime.Now, index, leafValueAttributes.Count);
 
                                 DoHistoricalCalculations(topElements.Item1, rootElements, leafValueAttributes, programStartTime);
 
+                                Console.WriteLine("{0} | StartIndex = {1} | Finished historical data analyses for {2} leaf elements\n", DateTime.Now, index, leafValueAttributes.Count);
+
+                                index += leafValueAttributes.Count;
                                 leafValueAttributes = new List<AFAttribute>();
                                 rootElements = new List<AFElement>();
                             }
@@ -135,7 +146,7 @@ namespace CalculationEngine
         /// </summary>
         private List<AFElement> LoadLeafElements()
         {
-            Console.WriteLine("{0} | Searching for leaf elements on {1}...", DateTime.Now, _settings.TargetDatabase.GetPath());
+            Console.WriteLine("{0} | Started to search for leaf elements on {1}...", DateTime.Now, _settings.TargetDatabase.GetPath());
 
             var leafElements = FindElements(_settings.LeafElementTemplate, new List<string>() { Constants.LEAF_VALUE, Constants.LEAF_MODE });
 
@@ -150,7 +161,7 @@ namespace CalculationEngine
         /// <returns>A list of 3-item tuples, where item1 is level, item2 is the name and item3 is the full list of element</returns>
         private List<Tuple<uint, string, List<AFElement>>> LoadNonLeafElements()
         {
-            Console.WriteLine("{0} | Searching for non-leaf elements on {1}...", DateTime.Now, _settings.TargetDatabase.GetPath());
+            Console.WriteLine("{0} | Started to search for non-leaf elements on {1}...", DateTime.Now, _settings.TargetDatabase.GetPath());
 
             var nonLeafElements = new List<Tuple<uint, string, List<AFElement>>>();
 
@@ -259,8 +270,6 @@ namespace CalculationEngine
         /// One may use a timer to run this method once a week.</remarks>
         private void PerformRollupOnce(uint level, IList<AFElement> rootElements, List<AFAttribute> leafValueAttributes, DateTime currentTime)
         {
-            Console.WriteLine("{0} | Starting rollup for {1} leaf elements", DateTime.Now, leafValueAttributes.Count);
-
             List<AFTime> times = new List<AFTime>();
 
             // Convert the timestamp to the exact hour
@@ -286,8 +295,6 @@ namespace CalculationEngine
             {
                 CalculateRollupRecursively(level, root, times, elementToTotals);
             }
-
-            Console.WriteLine("{0} | Finished rollup for {1} leaf elements\n", DateTime.Now, leafValueAttributes.Count);
         }
 
         /// <summary>
@@ -370,8 +377,6 @@ namespace CalculationEngine
         /// </summary>
         private void CalculateFluctuationIndex(List<AFAttribute> leafValueAttributes, DateTime currentTime)
         {
-            Console.WriteLine("{0} | Starting fluctuation index calculation for {1} leaf elements", DateTime.Now, leafValueAttributes.Count);
-
             var timeRange = new AFTimeRange(currentTime.AddDays(-7), currentTime);
             var results = SummarizeAttributes(leafValueAttributes, attributeList =>
                 attributeList.Data.Summary(
@@ -397,8 +402,6 @@ namespace CalculationEngine
                     writer.WriteLine(String.Format("{0}, {1}", elementNameAndValue.Item1, elementNameAndValue.Item2.ToString()));
                 }
             }
-
-            Console.WriteLine("{0} | Finished fluctuation index calculation for {1} leaf elements\n", DateTime.Now, leafValueAttributes.Count);
         }
 
         /// <summary>
