@@ -4,6 +4,8 @@ Due to the increasing number of connected devices present in industries, more an
 
 The goal of this project is to provide a set of sample code that handles representative large-asset-count use cases with the best practices in coding with PI AF SDK.
 
+Please see the [Wiki](https://github.com/osisoft/PI-AF-SDK-large-asset-count-Project/wiki) for the complete technical reference.
+
 ## Projects
 
 There are four projects in the solution to demonstrate an end-to-end example. 
