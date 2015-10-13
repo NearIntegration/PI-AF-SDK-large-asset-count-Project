@@ -4,6 +4,8 @@ Due to the increasing number of connected devices present in industries, more an
 
 The goal of this project is to provide a set of sample code that handles representative large-asset-count use cases with the best practices in coding with PI AF SDK.
 
+Please see the [Wiki](https://github.com/osisoft/PI-AF-SDK-large-asset-count-Project/wiki) for the complete technical reference.
+
 ## Projects
 
 There are four projects in the solution to demonstrate an end-to-end example. 
@@ -89,6 +91,10 @@ After compiling the solution, users should run the sample code following the seq
        </appSettings>
      </configuration>
   ```
+  
+## Questions and Comments
+
+For questions and comments, please join the discussion on [PI Developers Club](https://pisquare.osisoft.com/docs/DOC-1881).
 
 ## PI Software Versions
 
@@ -98,7 +104,7 @@ The code has been fully tested using a PI System containing 1 million leaf eleme
 
 ## Contributors
 
-  This project is based on the original work from [Jin Huang](https://github.com/jhuang0909) and [Barry Zhang](https://github.com/bzshang). We encourage contribution from any PI developers. New use case ideas and code contributions are always welcome.  
+  This project is based on the original work from [Jin Huang](https://github.com/jhuang0909) and [Barry Shang](https://github.com/bzshang). We encourage contribution from any PI developers. New use case ideas and code contributions are always welcome.  
 
 ## LICENSE
 
