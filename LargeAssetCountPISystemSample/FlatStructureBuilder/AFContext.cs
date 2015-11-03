@@ -17,7 +17,7 @@ namespace FlatStructureBuilder
         public AFElementTemplate SinusoidLeafTemplate { get; set; }
         public AFElementTemplate RandomLeafTemplate { get; set; }
 
-        public object DbLock { get; }
+        public object DbLock { get; private set; }
 
         public AFContext()
         {
