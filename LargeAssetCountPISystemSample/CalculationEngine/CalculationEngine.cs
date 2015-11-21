@@ -30,100 +30,58 @@ namespace CalculationEngine
         private Settings _settings;
         private string _leafTargetMode = "Prog-Auto";
         private ManualResetEventSlim _closeEvent = new ManualResetEventSlim(false);
-        private Task _mainTask;
+        private List<Task> _calculationTasks = new List<Task>();
+        private PIPagingConfiguration _pagingConfig;
+        private DateTime _programStartTime = DateTime.Now;
+        private List<AFElement> _leafElements;
+        private List<Tuple<uint, string, List<AFElement>>> _nonLeafElements;
 
         public CalculationEngine(Settings settings)
         {
             _settings = settings;
+            _pagingConfig = new PIPagingConfiguration(PIPageType.TagCount, PIPageSize, new TimeSpan(1, 0, 0));
         }
 
         /// <summary>
-        /// Perform calculations inculding outlier identification, creating Event Frame on target mode, roll up values to higher levels and calculate the fluctuation index
+        /// Perform calculations including outlier identification, creating Event Frame on target mode, roll up values to higher levels and calculate the fluctuation index
         /// </summary>
         public void Run()
         {
-            DateTime programStartTime = DateTime.Now;
-
-            // Load elements and related attributes
-            var leafElements = LoadLeafElements();
-            var nonLeafElements = LoadNonLeafElements();
+            // Find and partially load elements
+            _leafElements = LoadLeafElements();
+            _nonLeafElements = LoadNonLeafElements();
 
             // branchElements is the list of all branch elements, which has a level of 1
-            var branchElements = nonLeafElements.Where(tuple => tuple.Item1 == 1).First().Item3;
+            var branchElements = _nonLeafElements.Where(tuple => tuple.Item1 == 1).First().Item3;
 
             // Outlier identification 
             // Sign up for branch's value updates and check against a given threshold defined in a static sibling attribute
-            var outlierReporter = new OutlierReporter(BranchOutlierReportFile + programStartTime.ToString("_MMddyyyy_HHmm") + @".csv");
-            _mainTask = Task.Factory.StartNew(() =>
+            var outlierReporter = new OutlierReporter(BranchOutlierReportFile + _programStartTime.ToString("_MMddyyyy_HHmm") + @".csv");
+            _calculationTasks.Add(Task.Factory.StartNew(() =>
             {
                 using (var branchLevelMonitor = new AFDataObserver(branchElements.Select(elm => elm.Attributes[Constants.ROLLUP_SUM_ATTRIBUTE]).ToList(), outlierReporter.ReportOutlier))
                 {
                     branchLevelMonitor.Start();
-
-                    // Build EF based on the status change
-                    // Sign up for leaf's status value updates 
-                    using (var leafLevelMonitor = new AFDataObserver(leafElements.Select(elm => elm.Attributes[Constants.LEAF_MODE]).ToList(), CreateEFOnTargetMode))
-                    {
-                        leafLevelMonitor.Start();
-
-                        var topElements = nonLeafElements.Last();
-                        var leafValueAttributes = new List<AFAttribute>();
-                        var rootElements = new List<AFElement>();
-                        int index = 0;
-
-                        foreach (var topElement in topElements.Item3)
-                        {
-                            // Block the thread for a short time to check whether user has called Stop() and set the state of WaitHandle signaled
-                            // If true, stop calculations
-                            if (_closeEvent.Wait(100))
-                            {
-                                leafValueAttributes = new List<AFAttribute>();
-                                rootElements = new List<AFElement>();
-                                break;
-                            }
-
-                            // Collect value attributes from all leaf elements, which will be used in both rollup and fluctuation index calculations
-                            AggregateLeafAttributesRecursively(topElements.Item1, topElement, Constants.LEAF_VALUE, leafValueAttributes);
-                            rootElements.Add(topElement);
-
-                            // Process a chunk of leaf value attributes at one time in order to keep the memory consumption low
-                            if (leafValueAttributes.Count >= ChunkSize * MaxParallel)
-                            {
-                                Console.WriteLine("{0} | StartIndex = {1} | Started historical data analyses for {2} leaf elements", DateTime.Now, index, leafValueAttributes.Count);
-
-                                DoHistoricalCalculations(topElements.Item1, rootElements, leafValueAttributes, programStartTime);
-
-                                Console.WriteLine("{0} | StartIndex = {1} | Finished historical data analyses for {2} leaf elements\n", DateTime.Now, index, leafValueAttributes.Count);
-
-                                index += leafValueAttributes.Count;
-                                leafValueAttributes = new List<AFAttribute>();
-                                rootElements = new List<AFElement>();
-                            }
-                        }
-
-                        DoHistoricalCalculations(topElements.Item1, rootElements, leafValueAttributes, programStartTime);
-
-                        _closeEvent.Wait();
-                    }
+                    _closeEvent.Wait();
                 }
-            });
-        }
+            }));
 
-        /// <summary>
-        /// Perform calculations using historical values
-        /// </summary>
-        private void DoHistoricalCalculations(uint level, List<AFElement> rootElements, List<AFAttribute> leafValueAttributes, DateTime currentTime)
-        {
-            if (leafValueAttributes.Count == 0)
-                return;
+            // Sign up for leaf's status updates and build Event Frame based on the status change
+            _calculationTasks.Add(Task.Factory.StartNew(() =>
+            {
+                using (var leafLevelMonitor = new AFDataObserver(_leafElements.Select(elm => elm.Attributes[Constants.LEAF_MODE]).ToList(), CreateEFOnTargetMode))
+                {
+                    leafLevelMonitor.Start();
+                    _closeEvent.Wait();
+                }
+            }));
 
-            ResolvePIPoints(leafValueAttributes);
-
-            // Rollup from bottom to top recursively
-            PerformRollupOnce(level, rootElements, leafValueAttributes, currentTime);
-
-            // Calculate the fluctuation index for each leaf element
-            CalculateFluctuationIndex(leafValueAttributes, currentTime);
+            // Run rollup and fluctuation index calculation
+            _calculationTasks.Add(Task.Factory.StartNew(() =>
+            {
+                RunHistoricalCalculations();
+                _closeEvent.Wait();
+            }));
         }
 
         /// <summary>
@@ -132,7 +90,7 @@ namespace CalculationEngine
         public void Stop()
         {
             _closeEvent.Set();
-            _mainTask.Wait();
+            Task.WaitAll(_calculationTasks.ToArray());
 
             if (_settings != null && _settings.TargetDatabase != null)
             {
@@ -219,6 +177,66 @@ namespace CalculationEngine
         }
 
         /// <summary>
+        /// Perform calculations using historical values
+        /// </summary>
+        private void RunHistoricalCalculations()
+        {
+            var topElements = _nonLeafElements.Last();
+            var leafValueAttributes = new List<AFAttribute>();
+            var rootElements = new List<AFElement>();
+            int index = 0;
+
+            foreach (var topElement in topElements.Item3)
+            {
+                // Block the thread for a short time to check whether user has called Stop() and set the state of WaitHandle signaled
+                // If true, stop calculations
+                if (_closeEvent.Wait(100))
+                {
+                    leafValueAttributes = new List<AFAttribute>();
+                    rootElements = new List<AFElement>();
+                    break;
+                }
+
+                // Collect value attributes from all leaf elements, which will be used in both rollup and fluctuation index calculations
+                AggregateLeafAttributesRecursively(topElements.Item1, topElement, Constants.LEAF_VALUE, leafValueAttributes);
+                rootElements.Add(topElement);
+
+                // Process a chunk of leaf value attributes at one time in order to keep the memory consumption low
+                if (leafValueAttributes.Count >= ChunkSize * MaxParallel)
+                {
+                    Console.WriteLine("{0} | StartIndex = {1} | Started historical data analyses for {2} leaf elements", DateTime.Now, index, leafValueAttributes.Count);
+                    RunHistoricalCalculations(topElements.Item1, rootElements, leafValueAttributes);
+                    Console.WriteLine("{0} | StartIndex = {1} | Finished historical data analyses for {2} leaf elements\n", DateTime.Now, index, leafValueAttributes.Count);
+
+                    index += leafValueAttributes.Count;
+                    leafValueAttributes = new List<AFAttribute>();
+                    rootElements = new List<AFElement>();
+                }
+            }
+
+            Console.WriteLine("{0} | StartIndex = {1} | Started historical data analyses for {2} leaf elements", DateTime.Now, index, leafValueAttributes.Count);
+            RunHistoricalCalculations(topElements.Item1, rootElements, leafValueAttributes);
+            Console.WriteLine("{0} | StartIndex = {1} | Finished historical data analyses for {2} leaf elements\n", DateTime.Now, index, leafValueAttributes.Count);
+        }
+
+        /// <summary>
+        /// Perform historical calculations under a list of elements
+        /// </summary>
+        private void RunHistoricalCalculations(uint level, List<AFElement> rootElements, List<AFAttribute> leafValueAttributes)
+        {
+            if (leafValueAttributes.Count == 0)
+                return;
+
+            ResolvePIPoints(leafValueAttributes);
+
+            // Rollup from bottom to top recursively
+            PerformRollupOnce(level, rootElements, leafValueAttributes);
+
+            // Calculate the fluctuation index for each leaf element
+            CalculateFluctuationIndex(leafValueAttributes);
+        }
+
+        /// <summary>
         /// Recursively traverse the hierarchy and collect all leaf attribute to roll up
         /// </summary>
         /// <param name="level">the level of element in the hierarchy (leaf level = 0)</param>
@@ -268,28 +286,39 @@ namespace CalculationEngine
         /// <remarks>To address the potential data latency, this method will do rollup analysis based on the values in the past 2 weeks.
         /// New total values will replace the current values with the same timestamp assuming the new values are always more accurate.
         /// One may use a timer to run this method once a week.</remarks>
-        private void PerformRollupOnce(uint level, IList<AFElement> rootElements, List<AFAttribute> leafValueAttributes, DateTime currentTime)
+        private void PerformRollupOnce(uint level, IList<AFElement> rootElements, List<AFAttribute> leafValueAttributes)
         {
             List<AFTime> times = new List<AFTime>();
 
             // Convert the timestamp to the exact hour
-            currentTime = currentTime.Date.AddHours(currentTime.Hour);
+            var rollupEndTime = _programStartTime.Date.AddHours(_programStartTime.Hour);
             for (int i = HoursToRollup; i > 0; i--)
             {
-                times.Add(new AFTime(currentTime.AddHours(-1 * i + 1)));
+                times.Add(new AFTime(rollupEndTime.AddHours(-1 * i + 1)));
             }
 
+            // Retrieve hourly total values of leaf attributes in the past 2 weeks
             AFTimeRange timeRange = new AFTimeRange(times.First().UtcTime.AddHours(-1), times.Last().UtcTime);
             var results = SummarizeAttributes(leafValueAttributes, attributeList =>
-                attributeList.Data.Summaries(
-                    timeRange: timeRange,
-                    summaryDuration: new AFTimeSpan(0, 0, 0, 1.0, 0, 0),
-                    summaryTypes: AFSummaryTypes.Total,
-                    calculationBasis: AFCalculationBasis.EventWeighted,
-                    timeType: AFTimestampCalculation.Auto,
-                    pagingConfig: new PIPagingConfiguration(PIPageType.TagCount, PIPageSize))
-                );
+            {
+                try
+                {
+                    return attributeList.Data.Summaries(
+                          timeRange: timeRange,
+                          summaryDuration: new AFTimeSpan(0, 0, 0, 1.0, 0, 0),
+                          summaryTypes: AFSummaryTypes.Total,
+                          calculationBasis: AFCalculationBasis.EventWeighted,
+                          timeType: AFTimestampCalculation.Auto,
+                          pagingConfig: _pagingConfig).ToList();
+                }
+                catch (OperationCanceledException)
+                {
+                    Console.WriteLine("Exception reported at PerformRollupOnce : {0}", _pagingConfig.Error);
+                    throw _pagingConfig.Error;
+                }
+            });
 
+            // Create an element to total AFValues mapping and use it in rollup calculation
             var elementToTotals = results.Select(d => d[AFSummaryTypes.Total]).ToDictionary(v => v.Attribute.Element);
             foreach (var root in rootElements)
             {
@@ -366,7 +395,14 @@ namespace CalculationEngine
             AFAttribute rollupOutputAttr = parent.Attributes[Constants.ROLLUP_SUM_ATTRIBUTE];
             if (rollupValuesToSet.Count > 0 && rollupOutputAttr != null)
             {
-                rollupOutputAttr.Data.UpdateValues(rollupValuesToSet, AFUpdateOption.Replace);
+                var results = rollupOutputAttr.Data.UpdateValues(rollupValuesToSet, AFUpdateOption.Replace);
+                if (results != null)
+                {
+                    foreach (var ex in results.Errors)
+                    {
+                        Console.WriteLine("Exception reported at UpdateTotalValues : {0}", ex);
+                    }
+                }
             }
 
             return rollupValuesToReturn;
@@ -375,17 +411,26 @@ namespace CalculationEngine
         /// <summary>
         /// Calculate Fluctuation Index, which is defined as (Vmax-Vmin)/7, Vmax and Vmin are the maximum and minimum values in the past 7 days
         /// </summary>
-        private void CalculateFluctuationIndex(List<AFAttribute> leafValueAttributes, DateTime currentTime)
+        private void CalculateFluctuationIndex(List<AFAttribute> leafValueAttributes)
         {
-            var timeRange = new AFTimeRange(currentTime.AddDays(-7), currentTime);
+            var timeRange = new AFTimeRange(_programStartTime.AddDays(-7), _programStartTime);
             var results = SummarizeAttributes(leafValueAttributes, attributeList =>
-                attributeList.Data.Summary(
+            {
+                try
+                {
+                    return attributeList.Data.Summary(
                     timeRange: timeRange,
                     summaryTypes: AFSummaryTypes.Range,
                     calculationBasis: AFCalculationBasis.EventWeighted,
                     timeType: AFTimestampCalculation.Auto,
-                    pagingConfig: new PIPagingConfiguration(PIPageType.TagCount, PIPageSize)).ToList()
-                );
+                    pagingConfig: _pagingConfig).ToList();
+                }
+                catch (OperationCanceledException)
+                {
+                    Console.WriteLine("Exception reported at CalculateFluctuationIndex : {0}", _pagingConfig.Error);
+                    throw _pagingConfig.Error;
+                }
+            });
 
             var orderedResults = results
                 .Select(d => d[AFSummaryTypes.Range])
@@ -393,7 +438,7 @@ namespace CalculationEngine
                 .Select(v => Tuple.Create(v.Attribute.Element.Name, Convert.ToSingle(v.Value) / 7))
                 .OrderBy(t => t.Item1);
 
-            using (StreamWriter writer = new StreamWriter(FluctuationIndexReportFile + currentTime.ToString("_MMddyyyy_HHmm") + @".csv", true))
+            using (StreamWriter writer = new StreamWriter(FluctuationIndexReportFile + _programStartTime.ToString("_MMddyyyy_HHmm") + @".csv", true))
             {
                 writer.WriteLine(@"Name, Fluctuation Index");
 
@@ -411,7 +456,7 @@ namespace CalculationEngine
         /// <param name="attributes">the list of AF attributes to process</param>
         /// <param name="listOperator">the operation definition</param>
         /// <returns>Operation results</returns>
-        private IEnumerable<T> SummarizeAttributes<T>(IEnumerable<AFAttribute> attributes, Func<AFAttributeList, IEnumerable<T>> listOperator)
+        private IEnumerable<T> SummarizeAttributes<T>(IEnumerable<AFAttribute> attributes, Func<AFAttributeList, IList<T>> listOperator)
         {
             ConcurrentBag<IEnumerable<T>> results = new ConcurrentBag<IEnumerable<T>>();
 
@@ -423,7 +468,7 @@ namespace CalculationEngine
                     return;
 
                 var result = listOperator(attributeList);
-                results.Add(result.ToList());
+                results.Add(result);
             });
 
             return results.SelectMany(r => r);

@@ -60,7 +60,7 @@ namespace Utilities
                             }
                             catch (Exception ex)
                             {
-                                Console.WriteLine("Exception reported at CreatePointsNConfig : " + ex);
+                                Console.WriteLine("Exception reported at CreatePointsNConfig : {0}", ex);
                             }
                         }
 
@@ -257,14 +257,18 @@ namespace Utilities
                 .Where(p => p.Value == null)
                 .Select(p => p.Key)
                 .ToList();
-            targetPI.CreatePIPoints(pointsWithDefaultAttributes);
+            var results = targetPI.CreatePIPoints(pointsWithDefaultAttributes);
+            if (results.Errors.Count > 0)
+                throw new AggregateException(results.Errors.Values);
 
             // Create other PI points
             foreach (var pt in pointsWithDefaultAttributes)
             {
                 pointsToCreate.Remove(pt);
             }
-            targetPI.CreatePIPoints(pointsToCreate);
+            results = targetPI.CreatePIPoints(pointsToCreate);
+            if (results.Errors.Count > 0)
+                throw new AggregateException(results.Errors.Values);
         }
 
         /// <summary>
